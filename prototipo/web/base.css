@@ -19,6 +19,7 @@ h2 { font-size: 1.25rem; margin-top: 1.5rem; }
 h3 { font-size: 1rem; }
 p { margin: 0 0 .75rem; }
 .suave { color: var(--texto-suave); }
+[hidden] { display: none !important; }
 
 /* Estrutura */
 .topo {
