@@ -385,11 +385,94 @@ async function telaProduto({ atual, id }) {
   });
 }
 
+// ---------- Categorias ----------
+
+/** "Plataforma, Condição ,Cor," → ["Plataforma", "Condição", "Cor"]. */
+const atributosDoTexto = (texto) => texto.split(',').map((parte) => parte.trim()).filter(Boolean);
+
+function camposDeCategoria(categoria) {
+  return `
+    <div class="duas">
+      <label>Nome
+        <input type="text" name="nome" value="${esc(categoria.nome)}">
+      </label>
+      <label>Atributos
+        <input type="text" name="atributos" value="${esc(categoria.atributos.join(', '))}">
+        <span class="dica">Separados por vírgula, ex.: Plataforma, Condição</span>
+      </label>
+    </div>`;
+}
+
+async function telaCategorias({ atual, aviso }) {
+  const categorias = await chamar('/admin/categorias');
+  if (!atual()) return;
+  const linhas = categorias.map((c) => `
+    <form class="categoria bloco formulario" data-categoria="${esc(c.id)}" novalidate>
+      ${camposDeCategoria(c)}
+      <div class="acoes">
+        <button type="submit" class="botao pequeno">Salvar</button>
+        <button type="button" class="botao perigo pequeno" data-acao="excluir">Excluir</button>
+      </div>
+    </form>`).join('');
+  app.innerHTML = `
+    <div class="cabecalho"><h1>Categorias</h1></div>
+    <div data-aviso>${aviso}</div>
+    <div class="cartoes">${linhas || '<p class="suave">Nenhuma categoria cadastrada.</p>'}</div>
+    <h2>Nova categoria</h2>
+    <form class="categoria-nova bloco formulario" novalidate>
+      ${camposDeCategoria({ nome: '', atributos: [] })}
+      <div class="acoes"><button type="submit" class="botao">Criar categoria</button></div>
+    </form>`;
+
+  const regiao = app.querySelector('[data-aviso]');
+  const corpoDe = (form) => ({ nome: form.nome.value, atributos: atributosDoTexto(form.atributos.value) });
+
+  /** Faz a chamada; sucesso redesenha a tela com o aviso, erro aparece no topo. */
+  async function executar(botao, chamada, mensagem) {
+    botao.disabled = true;
+    try {
+      const resposta = await chamada();
+      if (!atual()) return;
+      avisoPendente = avisoHtml('ok', [mensagem(resposta)]);
+      desenhar({ manter: true });
+    } catch (erro) {
+      botao.disabled = false;
+      mostrarErro(regiao, erro);
+      regiao.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  for (const form of app.querySelectorAll('form.categoria[data-categoria]')) {
+    const caminho = `/admin/categorias/${encodeURIComponent(form.dataset.categoria)}`;
+    form.addEventListener('submit', (evento) => {
+      evento.preventDefault();
+      executar(form.querySelector('button[type="submit"]'),
+        () => chamar(caminho, { metodo: 'PUT', corpo: corpoDe(form) }),
+        (c) => `Categoria "${c.nome}" salva.`);
+    });
+    form.querySelector('button[data-acao="excluir"]').addEventListener('click', (evento) => {
+      const nome = form.nome.defaultValue;
+      executar(evento.currentTarget,
+        () => chamar(caminho, { metodo: 'DELETE' }),
+        () => `Categoria "${nome}" excluída.`);
+    });
+  }
+
+  const nova = app.querySelector('form.categoria-nova');
+  nova.addEventListener('submit', (evento) => {
+    evento.preventDefault();
+    executar(nova.querySelector('button[type="submit"]'),
+      () => chamar('/admin/categorias', { metodo: 'POST', corpo: corpoDe(nova) }),
+      (c) => `Categoria "${c.nome}" criada.`);
+  });
+}
+
 // ---------- Partida ----------
 
 const TELAS = {
   produtos: telaProdutos,
   produto: telaProduto,
+  categorias: telaCategorias,
 };
 
 document.getElementById('sair').addEventListener('click', encerrarSessao);
