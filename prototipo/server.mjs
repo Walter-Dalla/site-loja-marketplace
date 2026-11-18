@@ -38,6 +38,10 @@ for (const p of produtos) {
   });
 }
 
+// Último número usado por prefixo de id; só cresce, para um id excluído nunca voltar a outro item.
+const maiorNumero = (lista) => Math.max(0, ...lista.map((x) => Number(x.id.slice(1)) || 0));
+const ultimoId = { p: maiorNumero(produtos), c: maiorNumero(categorias) };
+
 const STATUS = ['novo', 'em_atendimento', 'concluido', 'cancelado'];
 
 class ErroHttp extends Error {
@@ -59,12 +63,10 @@ const reais = (centavos) => formatoMoeda.format(centavos / 100).replace(/ /g, '
 const disponivel = (p) => p.estoque === null || p.estoque > 0;
 const precoEfetivo = (p) => (p.sobConsulta ? null : p.precoPromocionalCentavos ?? p.precoCentavos);
 
-function novoId(prefixo, lista) {
-  let n = lista.length;
-  let id;
-  do id = `${prefixo}${++n}`; while (lista.some((x) => x.id === id));
-  return id;
-}
+const novoId = (prefixo) => `${prefixo}${++ultimoId[prefixo]}`;
+
+// Só propriedade própria: um atributo chamado "toString" não pode ler o de Object.prototype.
+const proprio = (objeto, chave) => (objeto != null && Object.hasOwn(objeto, chave) ? objeto[chave] : undefined);
 
 function achar(lista, id, nome) {
   const item = lista.find((x) => x.id === id);
@@ -97,7 +99,7 @@ function categoriasPublicas() {
       total: daCategoria.length,
       atributos: c.atributos.map((nome) => ({
         nome,
-        valores: [...new Set(daCategoria.map((p) => p.atributos[nome]).filter(Boolean))]
+        valores: [...new Set(daCategoria.map((p) => proprio(p.atributos, nome)).filter(Boolean))]
           .sort((a, b) => a.localeCompare(b, 'pt-BR')),
       })),
     };
@@ -117,7 +119,7 @@ function listarProdutos(query) {
   const busca = semAcento(query.get('busca') ?? '').trim();
   if (busca) lista = lista.filter((p) => semAcento(`${p.nome} ${p.descricao}`).includes(busca));
   for (const [chave, valor] of query) {
-    if (chave.startsWith('a.') && valor) lista = lista.filter((p) => p.atributos[chave.slice(2)] === valor);
+    if (chave.startsWith('a.') && valor) lista = lista.filter((p) => proprio(p.atributos, chave.slice(2)) === valor);
   }
   const porPagina = Math.min(50, Math.max(1, parseInt(query.get('porPagina'), 10) || 12));
   const pagina = Math.max(1, parseInt(query.get('pagina'), 10) || 1);
@@ -165,7 +167,7 @@ function validarProduto(e) {
   // Só entram os atributos que a categoria define.
   const atributos = {};
   for (const nomeAtributo of categoria?.atributos ?? []) {
-    const valor = str(e.atributos?.[nomeAtributo]).slice(0, 80);
+    const valor = str(proprio(e.atributos, nomeAtributo)).slice(0, 80);
     if (valor) atributos[nomeAtributo] = valor;
   }
 
@@ -212,7 +214,7 @@ function montarMensagem(pedido) {
     const valor = item.subtotalCentavos === null ? 'sob consulta' : reais(item.subtotalCentavos);
     linhas.push(`${item.quantidade}x ${item.nome} - ${valor}`);
   }
-  const soConsulta = pedido.temSobConsulta && pedido.totalCentavos === 0;
+  const soConsulta = pedido.itens.every((item) => item.subtotalCentavos === null);
   const total = soConsulta ? 'sob consulta' : reais(pedido.totalCentavos);
   const complemento = pedido.temSobConsulta && !soConsulta ? ' + itens sob consulta' : '';
   linhas.push('', `*Total: ${total}*${complemento}`);
@@ -313,7 +315,7 @@ rota('POST', '/api/admin/login', ({ corpo }) => {
 rota('GET', '/api/admin/produtos', () => produtos, ADMIN);
 rota('POST', '/api/admin/produtos', (ctx) => {
   const produto = {
-    id: novoId('p', produtos), ...validarProduto(ctx.corpo),
+    id: novoId('p'), ...validarProduto(ctx.corpo),
     origem: 'manual', idExterno: null, sincronizadoEm: null,
   };
   produtos.push(produto);
@@ -329,7 +331,7 @@ rota('DELETE', '/api/admin/produtos/:id', ({ params }) => {
 
 rota('GET', '/api/admin/categorias', () => categorias, ADMIN);
 rota('POST', '/api/admin/categorias', (ctx) => {
-  const categoria = { id: novoId('c', categorias), ...validarCategoria(ctx.corpo) };
+  const categoria = { id: novoId('c'), ...validarCategoria(ctx.corpo) };
   categorias.push(categoria);
   ctx.status = 201;
   return categoria;

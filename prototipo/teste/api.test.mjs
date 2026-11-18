@@ -105,3 +105,64 @@ describe('corpo grande', () => {
     }
   });
 });
+
+const CLIENTE = { nome: 'Ana Souza', telefone: '(11) 98765-4321' };
+const PRODUTO = { nome: 'Produto X', categoriaId: 'c2', precoCentavos: 1000, atributos: {} };
+
+describe('atributos com nome de Object.prototype', () => {
+  const loja = usarLoja('jogos');
+
+  it('desvio D2: atributo com nome de Object.prototype lê só o valor do produto', async () => {
+    for (const nome of ['toString', 'valueOf', 'constructor']) {
+      const categoria = await loja.admin('POST', '/api/admin/categorias', { nome: `Cat ${nome}`, atributos: [nome] });
+      assert.equal(categoria.status, 201);
+      const valores = async () => {
+        const r = await loja.pedir('GET', '/api/categorias');
+        assert.equal(r.status, 200);
+        return r.dados.find((c) => c.id === categoria.dados.id).atributos[0].valores;
+      };
+      assert.deepEqual(await valores(), []);
+      const comValor = { ...PRODUTO, categoriaId: categoria.dados.id, atributos: { [nome]: 'x' } };
+      assert.equal((await loja.admin('POST', '/api/admin/produtos', comValor)).status, 201);
+      assert.equal((await loja.admin('POST', '/api/admin/produtos', { ...PRODUTO, categoriaId: categoria.dados.id })).status, 201);
+      assert.deepEqual(await valores(), ['x']);
+      const filtro = await loja.pedir('GET', `/api/produtos?categoria=${categoria.dados.id}&a.${nome}=x`);
+      assert.equal(filtro.dados.total, 1);
+    }
+  });
+});
+
+describe('ids novos', () => {
+  const loja = usarLoja('jogos');
+
+  it('desvio D6: id de produto ou categoria excluído não é reusado', async () => {
+    assert.equal((await loja.admin('DELETE', '/api/admin/produtos/p12')).status, 204);
+    const p13 = await loja.admin('POST', '/api/admin/produtos', PRODUTO);
+    assert.equal(p13.dados.id, 'p13');
+    assert.equal((await loja.admin('DELETE', '/api/admin/produtos/p13')).status, 204);
+    assert.equal((await loja.admin('POST', '/api/admin/produtos', PRODUTO)).dados.id, 'p14');
+    const c4 = await loja.admin('POST', '/api/admin/categorias', { nome: 'Vazia', atributos: [] });
+    assert.equal(c4.dados.id, 'c4');
+    assert.equal((await loja.admin('DELETE', '/api/admin/categorias/c4')).status, 204);
+    assert.equal((await loja.admin('POST', '/api/admin/categorias', { nome: 'Outra', atributos: [] })).dados.id, 'c5');
+  });
+});
+
+describe('total da mensagem', () => {
+  const loja = usarLoja('impressao3d');
+
+  it('desvio D3: só itens sob consulta decidem o total "sob consulta"', async () => {
+    const brinde = await loja.admin('POST', '/api/admin/produtos', { nome: 'Brinde', categoriaId: 'c3', precoCentavos: 0 });
+    assert.equal(brinde.status, 201);
+    const ultimaLinha = async (itens) => {
+      const r = await loja.pedir('POST', '/api/pedidos', { cliente: CLIENTE, itens });
+      assert.equal(r.status, 201, r.texto);
+      return r.dados.mensagem.split('\n').at(-1);
+    };
+    const sobConsulta = { produtoId: 'p3', quantidade: 1 };
+    const precoZero = { produtoId: brinde.dados.id, quantidade: 1 };
+    assert.equal(await ultimaLinha([sobConsulta, precoZero]), '*Total: R$ 0,00* + itens sob consulta');
+    assert.equal(await ultimaLinha([precoZero]), '*Total: R$ 0,00*');
+    assert.equal(await ultimaLinha([sobConsulta]), '*Total: sob consulta*');
+  });
+});
