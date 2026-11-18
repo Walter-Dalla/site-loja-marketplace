@@ -194,7 +194,7 @@ legend { padding: 0 .35rem; font-size: .9rem; font-weight: 600; }
 .itens { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .75rem; }
 .item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: .5rem 1rem;
   align-items: center;
   padding: .75rem;
