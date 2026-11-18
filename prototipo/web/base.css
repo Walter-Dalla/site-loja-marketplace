@@ -229,3 +229,5 @@ td.numero, th.numero { text-align: right; white-space: nowrap; }
 .bloco { padding: .9rem; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--superficie); }
 details.bloco > summary { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1rem; cursor: pointer; }
 details.bloco[open] > summary { margin-bottom: .75rem; padding-bottom: .75rem; border-bottom: 1px solid var(--borda); }
+.entrada { max-width: 380px; margin: 2rem auto; }
+table.produtos s { margin-right: .35rem; color: var(--texto-suave); }
