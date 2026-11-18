@@ -45,9 +45,32 @@ function atualizarContador(carrinho = lerCarrinho()) {
   contador.textContent = String(carrinho.reduce((soma, item) => soma + item.quantidade, 0));
 }
 
+/** Única escrita do carrinho: grava (vazio remove a chave) e atualiza o contador. */
+function gravarCarrinho(carrinho) {
+  if (carrinho.length) localStorage.setItem(chaveCarrinho(), JSON.stringify(carrinho));
+  else localStorage.removeItem(chaveCarrinho());
+  atualizarContador(carrinho);
+}
+
+/** Quantidade digitada, se for inteira de 1 a 99; senão null. */
+function quantidadeValida(texto) {
+  const n = Number(texto);
+  return Number.isInteger(n) && n >= 1 && n <= 99 ? n : null;
+}
+
 // ---------- Rotas ----------
 
 const hrefProduto = (id) => `#/produto/${esc(encodeURIComponent(id))}`;
+
+function decodificar(trecho) {
+  try {
+    return decodeURIComponent(trecho);
+  } catch {
+    return trecho;
+  }
+}
+
+const voltarVitrine = (texto) => `<p>${esc(texto)}</p><p><a class="botao secundario" href="#/">Voltar à vitrine</a></p>`;
 
 /** Desenha em #app a tela da rota do hash; hash desconhecido cai na vitrine. */
 async function desenhar() {
@@ -61,7 +84,8 @@ async function desenhar() {
   }
   rotaDesenhada = rota;
   try {
-    await telaVitrine(atual);
+    if (rota === 'produto') await telaProduto(decodificar(hash.slice('#/produto/'.length)), atual);
+    else await telaVitrine(atual);
   } catch (erro) {
     if (atual()) app.innerHTML = avisoHtml('erro', linhasDoErro(erro));
   }
@@ -168,6 +192,74 @@ async function telaVitrine(atual) {
     filtros.categoria = '';
     filtros.atributos = {};
   }));
+}
+
+// ---------- Produto ----------
+
+async function telaProduto(id, atual) {
+  let p;
+  try {
+    if (!id) throw Object.assign(new Error('Produto não encontrado.'), { status: 404 });
+    p = await api(`/produtos/${encodeURIComponent(id)}`);
+  } catch (erro) {
+    if (!atual()) return;
+    app.innerHTML = erro.status === 404
+      ? voltarVitrine('Este produto não existe ou saiu da loja.')
+      : avisoHtml('erro', linhasDoErro(erro)) + voltarVitrine('Não foi possível abrir o produto.');
+    return;
+  }
+  if (!atual()) return;
+
+  const atributos = Object.entries(p.atributos ?? {});
+  const bloqueado = p.disponivel ? '' : ' disabled';
+  app.innerHTML = `
+    <p><a href="#/">← Vitrine</a></p>
+    <article class="produto">
+      ${capa(p)}
+      <div>
+        <h1>${esc(p.nome)}</h1>
+        ${p.disponivel ? '' : '<span class="etiqueta alerta">Indisponível</span>'}
+        <div class="preco-bloco">${precoHtml(p)}</div>
+        <dl class="ficha">${atributos.map(([nome, valor]) => `<dt>${esc(nome)}</dt><dd>${esc(valor)}</dd>`).join('')}</dl>
+        <p class="descricao">${esc(p.descricao)}</p>
+        <div class="compra">
+          <label>Quantidade
+            <input type="number" name="quantidade" min="1" max="99" step="1" value="1" inputmode="numeric"${bloqueado}>
+          </label>
+          <button type="button" class="botao" data-acao="adicionar"${bloqueado}>Adicionar ao carrinho</button>
+        </div>
+        <div class="retorno"></div>
+      </div>
+    </article>`;
+
+  const retorno = app.querySelector('.retorno');
+  app.querySelector('button[data-acao="adicionar"]').addEventListener('click', () => {
+    const quantidade = quantidadeValida(app.querySelector('input[name="quantidade"]').value);
+    if (quantidade === null) {
+      retorno.innerHTML = avisoHtml('erro', ['Quantidade: de 1 a 99.']);
+      return;
+    }
+    const carrinho = lerCarrinho();
+    const item = carrinho.find((i) => i.produtoId === p.id);
+    if (!item && carrinho.length >= 50) {
+      retorno.innerHTML = avisoHtml('erro', ['O carrinho aceita até 50 produtos diferentes.']);
+      return;
+    }
+    let texto = 'Produto adicionado ao carrinho.';
+    if (item) {
+      if (item.quantidade + quantidade > 99) texto = 'O carrinho ficou com 99 deste produto, o máximo por pedido.';
+      item.quantidade = Math.min(99, item.quantidade + quantidade);
+    } else {
+      carrinho.push({ produtoId: p.id, quantidade });
+    }
+    try {
+      gravarCarrinho(carrinho);
+    } catch {
+      retorno.innerHTML = avisoHtml('erro', ['Não foi possível guardar o carrinho neste navegador.']);
+      return;
+    }
+    retorno.innerHTML = `<div class="aviso ok" role="status">${esc(texto)} <a href="#/carrinho">Ver carrinho</a></div>`;
+  });
 }
 
 // ---------- Partida ----------
