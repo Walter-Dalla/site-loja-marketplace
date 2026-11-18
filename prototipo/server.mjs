@@ -167,8 +167,9 @@ function validarProduto(e) {
   // Só entram os atributos que a categoria define.
   const atributos = {};
   for (const nomeAtributo of categoria?.atributos ?? []) {
-    const valor = str(proprio(e.atributos, nomeAtributo)).slice(0, 80);
-    if (valor) atributos[nomeAtributo] = valor;
+    const valor = str(proprio(e.atributos, nomeAtributo));
+    if (valor.length > 80) erros.push(`${nomeAtributo}: até 80 caracteres.`);
+    else if (valor) atributos[nomeAtributo] = valor;
   }
 
   if (erros.length) throw new ErroHttp(422, 'Dados inválidos.', erros);

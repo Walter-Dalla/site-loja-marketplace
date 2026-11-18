@@ -166,3 +166,34 @@ describe('total da mensagem', () => {
     assert.equal(await ultimaLinha([sobConsulta]), '*Total: sob consulta*');
   });
 });
+
+describe('tamanho do valor de atributo', () => {
+  const loja = usarLoja('jogos');
+
+  it('atributo 81: valor acima de 80 caracteres devolve 422 e nada é gravado', async () => {
+    const quantos = async () => (await loja.admin('GET', '/api/admin/produtos')).dados.length;
+    const antes = await quantos();
+    const longo = await loja.admin('POST', '/api/admin/produtos', { ...PRODUTO, atributos: { Plataforma: 'y'.repeat(81) } });
+    assert.deepEqual(longo.dados, { erro: 'Dados inválidos.', detalhes: ['Plataforma: até 80 caracteres.'] });
+    assert.equal(longo.status, 422);
+    const dois = await loja.admin('POST', '/api/admin/produtos', {
+      ...PRODUTO,
+      atributos: { Plataforma: 'y'.repeat(81), Condição: 'z'.repeat(90), Inexistente: 'w'.repeat(200) },
+    });
+    assert.deepEqual(dois.dados.detalhes, ['Plataforma: até 80 caracteres.', 'Condição: até 80 caracteres.']);
+    assert.equal(await quantos(), antes);
+
+    const exato = await loja.admin('POST', '/api/admin/produtos', {
+      ...PRODUTO,
+      atributos: { Plataforma: `  ${'y'.repeat(80)}  `, Condição: '', Inexistente: 'w' },
+    });
+    assert.equal(exato.status, 201);
+    assert.deepEqual(exato.dados.atributos, { Plataforma: 'y'.repeat(80) });
+
+    const put = await loja.admin('PUT', `/api/admin/produtos/${exato.dados.id}`, { ...PRODUTO, atributos: { Plataforma: 'y'.repeat(81) } });
+    assert.equal(put.status, 422);
+    assert.deepEqual(put.dados.detalhes, ['Plataforma: até 80 caracteres.']);
+    const gravado = (await loja.admin('GET', '/api/admin/produtos')).dados.find((p) => p.id === exato.dados.id);
+    assert.deepEqual(gravado.atributos, { Plataforma: 'y'.repeat(80) });
+  });
+});
