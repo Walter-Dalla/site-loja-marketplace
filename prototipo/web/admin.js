@@ -467,12 +467,178 @@ async function telaCategorias({ atual, aviso }) {
   });
 }
 
+// ---------- Pedidos ----------
+
+const ROTULO_STATUS = {
+  novo: 'Novo',
+  em_atendimento: 'Em atendimento',
+  concluido: 'Concluído',
+  cancelado: 'Cancelado',
+};
+
+const opcoesDeStatus = (escolhido) => Object.entries(ROTULO_STATUS)
+  .map(([valor, rotulo]) => `<option value="${valor}"${valor === escolhido ? ' selected' : ''}>${rotulo}</option>`).join('');
+
+const rotuloStatus = (status) => ROTULO_STATUS[status] ?? status;
+
+const valorOuSobConsulta = (centavos) => (centavos == null ? 'sob consulta' : moeda(centavos));
+
+function totalDoPedido(pedido) {
+  if (pedido.itens.every((item) => item.subtotalCentavos == null)) return 'Sob consulta';
+  return moeda(pedido.totalCentavos) + (pedido.temSobConsulta ? ' + itens sob consulta' : '');
+}
+
+function blocoDoPedido(pedido) {
+  const itens = pedido.itens.map((item) => `
+    <tr>
+      <td>${esc(item.nome)}</td>
+      <td class="numero">${esc(item.quantidade)}</td>
+      <td class="numero">${esc(valorOuSobConsulta(item.subtotalCentavos))}</td>
+    </tr>`).join('');
+  return `
+    <details class="bloco" data-pedido="${esc(pedido.numero)}">
+      <summary>
+        <strong>#${esc(pedido.numero)}</strong>
+        <span>${esc(new Date(pedido.criadoEm).toLocaleString('pt-BR'))}</span>
+        <span>${esc(pedido.cliente.nome)}</span>
+        <span>${esc(totalDoPedido(pedido))}</span>
+        <span class="etiqueta" data-rotulo>${esc(rotuloStatus(pedido.status))}</span>
+      </summary>
+      <p>Telefone: ${esc(pedido.cliente.telefone)}</p>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Produto</th><th class="numero">Qtd.</th><th class="numero">Subtotal</th></tr></thead>
+          <tbody>${itens}</tbody>
+        </table>
+      </div>
+      <p>Total: ${esc(totalDoPedido(pedido))}</p>
+      ${pedido.observacao ? `<p>Observação: ${esc(pedido.observacao)}</p>` : ''}
+      <h3>Mensagem enviada</h3>
+      <pre class="mensagem">${esc(pedido.mensagem)}</pre>
+      <label>Status
+        <select name="status">${opcoesDeStatus(pedido.status)}</select>
+      </label>
+    </details>`;
+}
+
+// Filtro escolhido; vale enquanto a página não recarrega.
+let filtroPedidos = '';
+
+async function telaPedidos({ atual, aviso }) {
+  app.innerHTML = `
+    <div class="cabecalho">
+      <h1>Pedidos</h1>
+      <label>Status
+        <select name="filtro-status"><option value="">Todos</option>${opcoesDeStatus(filtroPedidos)}</select>
+      </label>
+    </div>
+    <div data-aviso>${aviso}</div>
+    <div class="cartoes" data-pedidos><p class="suave">Carregando…</p></div>`;
+  const regiao = app.querySelector('[data-aviso]');
+  const lista = app.querySelector('[data-pedidos]');
+  const filtro = app.querySelector('select[name="filtro-status"]');
+
+  async function listar(vigente) {
+    const consulta = filtroPedidos ? `?status=${encodeURIComponent(filtroPedidos)}` : '';
+    const pedidos = await chamar(`/admin/pedidos${consulta}`);
+    if (!vigente()) return;
+    lista.innerHTML = pedidos.length
+      ? pedidos.map(blocoDoPedido).join('')
+      : `<p class="suave">${filtroPedidos ? `Nenhum pedido com o status "${esc(rotuloStatus(filtroPedidos))}".` : 'Nenhum pedido ainda.'}</p>`;
+  }
+
+  filtro.addEventListener('change', async () => {
+    filtroPedidos = filtro.value;
+    regiao.innerHTML = '';
+    lista.innerHTML = '<p class="suave">Carregando…</p>';
+    // Cada filtro é um desenho novo: a resposta de um filtro anterior chega tarde e é ignorada.
+    const vigente = novoDesenho();
+    try {
+      await listar(vigente);
+    } catch (erro) {
+      if (vigente()) mostrarErro(lista, erro);
+    }
+  });
+
+  lista.addEventListener('change', async (evento) => {
+    const select = evento.target;
+    if (select.name !== 'status') return;
+    const bloco = select.closest('details[data-pedido]');
+    const anterior = select.querySelector('option[selected]')?.value;
+    select.disabled = true;
+    try {
+      const pedido = await chamar(`/admin/pedidos/${encodeURIComponent(bloco.dataset.pedido)}`, {
+        metodo: 'PATCH',
+        corpo: { status: select.value },
+      });
+      bloco.querySelector('[data-rotulo]').textContent = rotuloStatus(pedido.status);
+      for (const opcao of select.options) opcao.defaultSelected = opcao.value === pedido.status;
+      regiao.innerHTML = avisoHtml('ok', [`Pedido #${pedido.numero}: status "${rotuloStatus(pedido.status)}" salvo.`]);
+    } catch (erro) {
+      if (anterior) select.value = anterior;
+      mostrarErro(regiao, erro);
+    } finally {
+      select.disabled = false;
+    }
+  });
+
+  await listar(atual);
+}
+
+// ---------- Loja ----------
+
+async function telaLoja({ atual, aviso }) {
+  const loja = await chamar('/admin/loja');
+  if (!atual()) return;
+  app.innerHTML = `
+    <div class="cabecalho"><h1>Loja</h1></div>
+    <form class="loja formulario" novalidate>
+      <label>Nome
+        <input type="text" name="nome" value="${esc(loja.nome)}">
+      </label>
+      <label>Slogan
+        <input type="text" name="slogan" value="${esc(loja.slogan)}">
+      </label>
+      <label>WhatsApp do vendedor
+        <input type="tel" inputmode="numeric" name="whatsapp" autocomplete="off" value="${esc(loja.whatsapp)}">
+        <span class="dica">DDI + DDD + número, só dígitos</span>
+      </label>
+      <div data-aviso>${aviso}</div>
+      <div class="acoes"><button type="submit" class="botao">Salvar</button></div>
+    </form>`;
+  const form = app.querySelector('form.loja');
+  const regiao = form.querySelector('[data-aviso]');
+  const botao = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    botao.disabled = true;
+    try {
+      const salva = await chamar('/admin/loja', {
+        metodo: 'PUT',
+        corpo: { nome: form.nome.value, slogan: form.slogan.value, whatsapp: form.whatsapp.value },
+      });
+      mostrarNomeDaLoja(salva.nome);
+      if (!atual()) return;
+      form.nome.value = salva.nome;
+      form.slogan.value = salva.slogan;
+      form.whatsapp.value = salva.whatsapp;
+      regiao.innerHTML = avisoHtml('ok', ['Dados da loja salvos.']);
+    } catch (erro) {
+      mostrarErro(regiao, erro);
+    } finally {
+      botao.disabled = false;
+    }
+  });
+}
+
 // ---------- Partida ----------
 
 const TELAS = {
   produtos: telaProdutos,
   produto: telaProduto,
   categorias: telaCategorias,
+  pedidos: telaPedidos,
+  loja: telaLoja,
 };
 
 document.getElementById('sair').addEventListener('click', encerrarSessao);
