@@ -202,10 +202,194 @@ async function telaProdutos({ atual, aviso }) {
     </div>`;
 }
 
+// ---------- Produto ----------
+
+// Reais em pt-BR: 199,90 · 1.299,00 · 1299 (milhar com ponto opcional; centavos opcionais, 1 ou 2 casas).
+const FORMATO_REAIS = /^(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/;
+
+/** Texto em reais → centavos, por texto (sem ponto flutuante). Vazio: null. Inválido: undefined. */
+function centavosDoTexto(texto) {
+  const limpo = texto.trim();
+  if (!limpo) return null;
+  const partes = FORMATO_REAIS.exec(limpo);
+  if (!partes) return undefined;
+  const centavos = Number(partes[1].replaceAll('.', '') + (partes[2] ?? '').padEnd(2, '0'));
+  return Number.isSafeInteger(centavos) ? centavos : undefined;
+}
+
+/** Centavos → texto em reais para o campo (29990 → 299,90; 129900 → 1.299,00). */
+function textoDosCentavos(centavos) {
+  if (centavos == null) return '';
+  const digitos = String(centavos).padStart(3, '0');
+  const reais = digitos.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${reais},${digitos.slice(-2)}`;
+}
+
+function camposDeAtributo(categoria, valores) {
+  const nomes = categoria?.atributos ?? [];
+  if (!nomes.length) return '<p class="dica">Esta categoria não tem atributos.</p>';
+  return `<div class="duas">${nomes.map((nome) => `
+    <label>${esc(nome)}
+      <input type="text" data-atributo="${esc(nome)}" value="${esc(valores[nome] ?? '')}">
+    </label>`).join('')}</div>`;
+}
+
+async function telaProduto({ atual, id }) {
+  const novo = id === 'novo';
+  const [categorias, produtos] = await Promise.all([
+    chamar('/admin/categorias'),
+    novo ? Promise.resolve([]) : chamar('/admin/produtos'),
+  ]);
+  if (!atual()) return;
+  const produto = novo
+    ? { nome: '', descricao: '', categoriaId: '', sobConsulta: false, precoCentavos: null, precoPromocionalCentavos: null, estoque: null, ativo: true, destaque: false, imagemUrl: '', atributos: {} }
+    : produtos.find((p) => p.id === id);
+  if (!produto) {
+    app.innerHTML = `
+      <div class="cabecalho"><h1>Produto não encontrado</h1></div>
+      <p>Esse produto não existe ou foi excluído.</p>
+      <p><a href="#/produtos">Voltar à lista de produtos</a></p>`;
+    return;
+  }
+
+  const categoriaDe = (categoriaId) => categorias.find((c) => c.id === categoriaId);
+  const temCategoria = !!categoriaDe(produto.categoriaId);
+  const opcoes = (temCategoria ? '' : '<option value="">Escolha a categoria</option>')
+    + categorias.map((c) => `<option value="${esc(c.id)}"${c.id === produto.categoriaId ? ' selected' : ''}>${esc(c.nome)}</option>`).join('');
+
+  app.innerHTML = `
+    <div class="cabecalho">
+      <h1>${novo ? 'Novo produto' : 'Editar produto'}</h1>
+      <a class="botao secundario" href="#/produtos">Voltar à lista</a>
+    </div>
+    <form class="produto formulario" novalidate>
+      <label>Nome
+        <input type="text" name="nome" value="${esc(produto.nome)}">
+      </label>
+      <label>Categoria
+        <select name="categoriaId">${opcoes}</select>
+      </label>
+      <fieldset>
+        <legend>Atributos</legend>
+        <div data-atributos>${camposDeAtributo(categoriaDe(produto.categoriaId), produto.atributos)}</div>
+      </fieldset>
+      <label>Descrição
+        <textarea name="descricao">${esc(produto.descricao)}</textarea>
+      </label>
+      <label class="caixa"><input type="checkbox" name="sobConsulta"${produto.sobConsulta ? ' checked' : ''}> Sob consulta (sem preço)</label>
+      <div class="duas">
+        <label>Preço (R$)
+          <input type="text" inputmode="decimal" name="preco" autocomplete="off" value="${esc(textoDosCentavos(produto.precoCentavos))}">
+          <span class="dica">Ex.: 199,90 ou 1.299,00</span>
+        </label>
+        <label>Preço promocional (R$)
+          <input type="text" inputmode="decimal" name="precoPromocional" autocomplete="off" value="${esc(textoDosCentavos(produto.precoPromocionalCentavos))}">
+          <span class="dica">Vazio: sem promoção</span>
+        </label>
+      </div>
+      <label>Estoque
+        <input type="text" inputmode="numeric" name="estoque" autocomplete="off" value="${produto.estoque == null ? '' : esc(produto.estoque)}">
+        <span class="dica">Vazio: estoque não controlado</span>
+      </label>
+      <label>URL da imagem
+        <input type="url" name="imagemUrl" value="${esc(produto.imagemUrl)}">
+        <span class="dica">Endereço http(s) da imagem; vazio: capa com as iniciais</span>
+      </label>
+      <label class="caixa"><input type="checkbox" name="ativo"${produto.ativo ? ' checked' : ''}> Ativo (aparece na loja)</label>
+      <label class="caixa"><input type="checkbox" name="destaque"${produto.destaque ? ' checked' : ''}> Destaque (abertura da vitrine)</label>
+      <div data-aviso></div>
+      <div class="acoes">
+        <button type="submit" class="botao">Salvar</button>
+        ${novo ? '' : '<button type="button" class="botao perigo" data-acao="excluir">Excluir</button>'}
+      </div>
+    </form>`;
+
+  const form = app.querySelector('form.produto');
+  const regiao = form.querySelector('[data-aviso]');
+  const areaAtributos = form.querySelector('[data-atributos]');
+  const botaoSalvar = form.querySelector('button[type="submit"]');
+
+  // Valores digitados nos atributos, por nome: trocar a categoria mantém os de mesmo nome.
+  const valoresAtributos = { ...produto.atributos };
+  areaAtributos.addEventListener('input', (evento) => {
+    const nome = evento.target.dataset.atributo;
+    if (nome) valoresAtributos[nome] = evento.target.value;
+  });
+  form.categoriaId.addEventListener('change', () => {
+    areaAtributos.innerHTML = camposDeAtributo(categoriaDe(form.categoriaId.value), valoresAtributos);
+  });
+
+  const ajustarPrecos = () => {
+    form.preco.disabled = form.sobConsulta.checked;
+    form.precoPromocional.disabled = form.sobConsulta.checked;
+  };
+  form.sobConsulta.addEventListener('change', ajustarPrecos);
+  ajustarPrecos();
+
+  form.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const sobConsulta = form.sobConsulta.checked;
+    const precoCentavos = sobConsulta ? null : centavosDoTexto(form.preco.value);
+    const precoPromocionalCentavos = sobConsulta ? null : centavosDoTexto(form.precoPromocional.value);
+    const recusas = [];
+    if (precoCentavos === undefined) recusas.push('Preço: use reais, como 199,90 ou 1.299,00.');
+    if (precoPromocionalCentavos === undefined) recusas.push('Preço promocional: use reais, como 199,90 ou 1.299,00.');
+    if (recusas.length) {
+      regiao.innerHTML = avisoHtml('erro', recusas);
+      return;
+    }
+    const textoEstoque = form.estoque.value.trim();
+    const atributos = {};
+    for (const campo of areaAtributos.querySelectorAll('input[data-atributo]')) atributos[campo.dataset.atributo] = campo.value;
+    const corpo = {
+      nome: form.nome.value,
+      descricao: form.descricao.value,
+      categoriaId: form.categoriaId.value,
+      sobConsulta,
+      precoCentavos,
+      precoPromocionalCentavos,
+      // Quem valida é a API: texto que não é inteiro vai como está e volta como erro 422.
+      estoque: textoEstoque === '' ? null : /^\d+$/.test(textoEstoque) ? Number(textoEstoque) : textoEstoque,
+      ativo: form.ativo.checked,
+      destaque: form.destaque.checked,
+      imagemUrl: form.imagemUrl.value,
+      atributos,
+    };
+    botaoSalvar.disabled = true;
+    try {
+      const salvo = novo
+        ? await chamar('/admin/produtos', { metodo: 'POST', corpo })
+        : await chamar(`/admin/produtos/${encodeURIComponent(id)}`, { metodo: 'PUT', corpo });
+      if (!atual()) return;
+      avisoPendente = avisoHtml('ok', [`Produto "${salvo.nome}" salvo.`]);
+      location.hash = '#/produtos';
+    } catch (erro) {
+      botaoSalvar.disabled = false;
+      mostrarErro(regiao, erro);
+    }
+  });
+
+  form.querySelector('button[data-acao="excluir"]')?.addEventListener('click', async (evento) => {
+    if (!confirm(`Excluir o produto "${produto.nome}"? Esta ação não pode ser desfeita.`)) return;
+    const botao = evento.currentTarget;
+    botao.disabled = true;
+    try {
+      await chamar(`/admin/produtos/${encodeURIComponent(id)}`, { metodo: 'DELETE' });
+      if (!atual()) return;
+      avisoPendente = avisoHtml('ok', [`Produto "${produto.nome}" excluído.`]);
+      location.hash = '#/produtos';
+    } catch (erro) {
+      botao.disabled = false;
+      mostrarErro(regiao, erro);
+    }
+  });
+}
+
 // ---------- Partida ----------
 
 const TELAS = {
   produtos: telaProdutos,
+  produto: telaProduto,
 };
 
 document.getElementById('sair').addEventListener('click', encerrarSessao);
