@@ -138,15 +138,17 @@ describe('atributos com nome de Object.prototype', () => {
 describe('ids novos', () => {
   const loja = usarLoja('jogos');
 
-  it('desvio D6: id de produto ou categoria excluído não é reusado', async () => {
+  it('desvio D6: id de produto ou categoria excluído não é reusado, e POST recusado não gasta id', async () => {
     assert.equal((await loja.admin('DELETE', '/api/admin/produtos/p12')).status, 204);
     const p13 = await loja.admin('POST', '/api/admin/produtos', PRODUTO);
     assert.equal(p13.dados.id, 'p13');
     assert.equal((await loja.admin('DELETE', '/api/admin/produtos/p13')).status, 204);
+    assert.equal((await loja.admin('POST', '/api/admin/produtos', { ...PRODUTO, nome: '' })).status, 422);
     assert.equal((await loja.admin('POST', '/api/admin/produtos', PRODUTO)).dados.id, 'p14');
     const c4 = await loja.admin('POST', '/api/admin/categorias', { nome: 'Vazia', atributos: [] });
     assert.equal(c4.dados.id, 'c4');
     assert.equal((await loja.admin('DELETE', '/api/admin/categorias/c4')).status, 204);
+    assert.equal((await loja.admin('POST', '/api/admin/categorias', { nome: '', atributos: [] })).status, 422);
     assert.equal((await loja.admin('POST', '/api/admin/categorias', { nome: 'Outra', atributos: [] })).dados.id, 'c5');
   });
 });

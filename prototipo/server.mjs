@@ -315,8 +315,9 @@ rota('POST', '/api/admin/login', ({ corpo }) => {
 
 rota('GET', '/api/admin/produtos', () => produtos, ADMIN);
 rota('POST', '/api/admin/produtos', (ctx) => {
+  const dados = validarProduto(ctx.corpo); // valida antes: um POST recusado não gasta id
   const produto = {
-    id: novoId('p'), ...validarProduto(ctx.corpo),
+    id: novoId('p'), ...dados,
     origem: 'manual', idExterno: null, sincronizadoEm: null,
   };
   produtos.push(produto);
@@ -332,7 +333,8 @@ rota('DELETE', '/api/admin/produtos/:id', ({ params }) => {
 
 rota('GET', '/api/admin/categorias', () => categorias, ADMIN);
 rota('POST', '/api/admin/categorias', (ctx) => {
-  const categoria = { id: novoId('c'), ...validarCategoria(ctx.corpo) };
+  const dados = validarCategoria(ctx.corpo); // valida antes: um POST recusado não gasta id
+  const categoria = { id: novoId('c'), ...dados };
   categorias.push(categoria);
   ctx.status = 201;
   return categoria;
