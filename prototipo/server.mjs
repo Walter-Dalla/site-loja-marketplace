@@ -491,5 +491,6 @@ const servidor = createServer(async (req, res) => {
 });
 
 servidor.listen(PORTA, HOST, () => {
-  console.log(`[${LOJA}] ${loja.nome}: http://localhost:${PORTA}  (admin: http://localhost:${PORTA}/admin)`);
+  const { port } = servidor.address();
+  console.log(`[${LOJA}] ${loja.nome}: http://localhost:${port}  (admin: http://localhost:${port}/admin)`);
 });
