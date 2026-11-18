@@ -85,6 +85,8 @@ async function desenhar() {
   rotaDesenhada = rota;
   try {
     if (rota === 'produto') await telaProduto(decodificar(hash.slice('#/produto/'.length)), atual);
+    else if (rota === '#/carrinho') await telaCarrinho(atual);
+    else if (rota === '#/pedido') telaPedido();
     else await telaVitrine(atual);
   } catch (erro) {
     if (atual()) app.innerHTML = avisoHtml('erro', linhasDoErro(erro));
@@ -260,6 +262,199 @@ async function telaProduto(id, atual) {
     }
     retorno.innerHTML = `<div class="aviso ok" role="status">${esc(texto)} <a href="#/carrinho">Ver carrinho</a></div>`;
   });
+}
+
+// ---------- Carrinho ----------
+
+/** Só endereço do WhatsApp vira destino de janela ou href; qualquer outro vale como ausente. */
+const linkWhatsApp = (link) => (typeof link === 'string' && link.startsWith('https://wa.me/') ? link : null);
+
+/** Texto do total: soma dos itens com preço, seguida de "+ itens sob consulta" quando houver. */
+function textoTotal(centavos, temSobConsulta, soSobConsulta) {
+  if (soSobConsulta) return 'Sob consulta';
+  return `${moeda(centavos)}${temSobConsulta ? ' + itens sob consulta' : ''}`;
+}
+
+async function telaCarrinho(atual) {
+  if (!lerCarrinho().length) {
+    app.innerHTML = `<h1>Carrinho</h1>${voltarVitrine('Seu carrinho está vazio.')}`;
+    return;
+  }
+  const params = new URLSearchParams({ ids: lerCarrinho().map((i) => i.produtoId).join(','), porPagina: '50' });
+  const { itens } = await api(`/produtos?${params}`);
+  if (!atual()) return;
+
+  const produtos = new Map(itens.map((p) => [p.id, p]));
+  /** Produto à venda: veio da API e está disponível. Os demais ficam fora do total e do pedido. */
+  const aVenda = (id) => produtos.get(id)?.disponivel === true;
+  const subtotal = (id, quantidade) => {
+    const preco = precoDe(produtos.get(id));
+    return preco === null ? 'Sob consulta' : moeda(preco * quantidade);
+  };
+
+  function itemHtml({ produtoId, quantidade }) {
+    const p = produtos.get(produtoId);
+    const venda = aVenda(produtoId);
+    const nome = p ? p.nome : 'Produto fora de venda';
+    let detalhe = '<span class="etiqueta alerta">Não está mais à venda</span>';
+    if (p && !venda) detalhe = '<span class="etiqueta alerta">Indisponível</span>';
+    if (venda) detalhe = `<span class="preco-bloco">${precoHtml(p)}</span> <span class="suave">cada</span>`;
+    return `<li class="item${venda ? '' : ' fora'}" data-produto="${esc(produtoId)}">
+      <div>
+        <h3>${p ? `<a href="${hrefProduto(produtoId)}">${esc(nome)}</a>` : esc(nome)}</h3>
+        ${detalhe}
+      </div>
+      <div class="subtotal">${venda ? esc(subtotal(produtoId, quantidade)) : '—'}</div>
+      <div class="controles">
+        ${venda
+          ? `<input type="number" name="quantidade" min="1" max="99" step="1" value="${esc(quantidade)}" inputmode="numeric" aria-label="Quantidade de ${esc(nome)}">`
+          : `<span class="suave">Quantidade: ${esc(quantidade)}</span>`}
+        <button type="button" class="botao secundario pequeno" data-acao="remover">Remover</button>
+      </div>
+    </li>`;
+  }
+
+  function totalHtml(carrinho) {
+    let soma = 0;
+    let comPreco = false;
+    let sobConsulta = false;
+    for (const { produtoId, quantidade } of carrinho) {
+      if (!aVenda(produtoId)) continue;
+      const preco = precoDe(produtos.get(produtoId));
+      if (preco === null) sobConsulta = true;
+      else {
+        soma += preco * quantidade;
+        comPreco = true;
+      }
+    }
+    return `<span>Total</span><span>${esc(textoTotal(soma, sobConsulta, sobConsulta && !comPreco))}</span>`;
+  }
+
+  const carrinho = lerCarrinho();
+  app.innerHTML = `
+    <h1>Carrinho</h1>
+    <ul class="itens">${carrinho.map(itemHtml).join('')}</ul>
+    <div class="total">${totalHtml(carrinho)}</div>
+    <div class="retorno"></div>
+    <form class="pedido formulario" novalidate>
+      <h2>Seus dados</h2>
+      <label>Nome
+        <input type="text" name="nome" autocomplete="name">
+      </label>
+      <label>Telefone com DDD
+        <input type="tel" name="telefone" autocomplete="tel" inputmode="tel">
+      </label>
+      <label>Observação <span class="dica">opcional</span>
+        <textarea name="observacao"></textarea>
+      </label>
+      <p class="dica">Nome e telefone são usados só para atender este pedido.</p>
+      <button type="submit" class="botao">Enviar pedido pelo WhatsApp</button>
+    </form>`;
+
+  const lista = app.querySelector('ul.itens');
+  const total = app.querySelector('.total');
+  const retorno = app.querySelector('.retorno');
+  const formulario = app.querySelector('form.pedido');
+
+  // A lista e o total mudam no lugar: o formulário não é redesenhado e guarda o que o cliente digitou.
+  lista.addEventListener('input', (evento) => {
+    const campo = evento.target;
+    if (campo.name !== 'quantidade') return;
+    const quantidade = quantidadeValida(campo.value);
+    if (quantidade === null) return;
+    const id = campo.closest('li.item').dataset.produto;
+    const atualizado = lerCarrinho().map((i) => (i.produtoId === id ? { ...i, quantidade } : i));
+    gravarCarrinho(atualizado);
+    campo.closest('li.item').querySelector('.subtotal').textContent = subtotal(id, quantidade);
+    total.innerHTML = totalHtml(atualizado);
+  });
+  lista.addEventListener('change', (evento) => {
+    const campo = evento.target;
+    if (campo.name !== 'quantidade' || quantidadeValida(campo.value) !== null) return;
+    const id = campo.closest('li.item').dataset.produto;
+    campo.value = String(lerCarrinho().find((i) => i.produtoId === id)?.quantidade ?? 1);
+  });
+  lista.addEventListener('click', (evento) => {
+    const botao = evento.target.closest('button[data-acao="remover"]');
+    if (!botao) return;
+    const li = botao.closest('li.item');
+    const restante = lerCarrinho().filter((i) => i.produtoId !== li.dataset.produto);
+    gravarCarrinho(restante);
+    if (!restante.length) {
+      desenhar();
+      return;
+    }
+    li.remove();
+    total.innerHTML = totalHtml(restante);
+  });
+
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const botao = formulario.querySelector('button[type="submit"]');
+    if (botao.disabled) return;
+    // Aberta no próprio gesto do cliente; aberta depois da resposta, o navegador a bloquearia.
+    const janela = window.open('', '_blank');
+    botao.disabled = true;
+    retorno.innerHTML = '';
+    const dados = new FormData(formulario);
+    const corpo = {
+      cliente: { nome: dados.get('nome'), telefone: dados.get('telefone') },
+      observacao: dados.get('observacao'),
+      itens: lerCarrinho().filter((i) => aVenda(i.produtoId)),
+    };
+    let pedido;
+    try {
+      pedido = await api('/pedidos', { metodo: 'POST', corpo });
+    } catch (erro) {
+      janela?.close();
+      retorno.innerHTML = avisoHtml('erro', linhasDoErro(erro));
+      botao.disabled = false;
+      return;
+    }
+    sessionStorage.setItem('ultimoPedido', JSON.stringify(pedido));
+    gravarCarrinho([]);
+    const link = linkWhatsApp(pedido.linkWhatsApp);
+    if (janela && link) janela.location.href = link;
+    else janela?.close();
+    location.hash = '#/pedido';
+  });
+}
+
+// ---------- Confirmação ----------
+
+/** Último pedido da sessão, se tiver o formato da resposta de POST /api/pedidos; senão null. */
+function lerUltimoPedido() {
+  try {
+    const pedido = JSON.parse(sessionStorage.getItem('ultimoPedido'));
+    const valido = pedido !== null && typeof pedido === 'object'
+      && Number.isInteger(pedido.numero) && Number.isInteger(pedido.totalCentavos)
+      && typeof pedido.mensagem === 'string';
+    return valido ? pedido : null;
+  } catch {
+    return null;
+  }
+}
+
+function telaPedido() {
+  const pedido = lerUltimoPedido();
+  if (!pedido) {
+    app.innerHTML = `<h1>Pedido</h1>${voltarVitrine('Nenhum pedido enviado nesta sessão.')}`;
+    return;
+  }
+  const temSobConsulta = pedido.temSobConsulta === true;
+  const soSobConsulta = temSobConsulta && pedido.mensagem.includes('*Total: sob consulta*');
+  const link = linkWhatsApp(pedido.linkWhatsApp);
+  app.innerHTML = `
+    <h1>Pedido nº ${esc(pedido.numero)} registrado</h1>
+    <p>Total: <strong>${esc(textoTotal(pedido.totalCentavos, temSobConsulta, soSobConsulta))}</strong></p>
+    <p class="suave">${link
+      ? 'Se o WhatsApp não abriu, ou se você ainda não enviou a mensagem, use o botão abaixo.'
+      : 'O link do WhatsApp deste pedido não está disponível. Envie a mensagem abaixo ao vendedor.'}</p>
+    <pre class="mensagem">${esc(pedido.mensagem)}</pre>
+    <p class="acoes">
+      ${link ? `<a class="botao" data-acao="abrir-whatsapp" href="${esc(link)}" target="_blank" rel="noopener">Abrir WhatsApp</a>` : ''}
+      <a class="botao secundario" href="#/">Voltar à vitrine</a>
+    </p>`;
 }
 
 // ---------- Partida ----------
