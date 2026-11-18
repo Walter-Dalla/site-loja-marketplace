@@ -1,0 +1,21 @@
+/* Customização da loja de impressão 3D: substitui web/tema.css. */
+:root {
+  color-scheme: light;
+  --fonte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fundo: #f4f5f7;
+  --superficie: #ffffff;
+  --texto: #1c2430;
+  --texto-suave: #5b6675;
+  --borda: #d9dee5;
+  --primaria: #c2410c;
+  --sobre-primaria: #ffffff;
+  --destaque: #c2410c;
+  --alerta: #b91c1c;
+  --raio: 4px;
+}
+
+.faixa {
+  background: #1c2430;
+  color: #fff;
+  border-left: 6px solid #f97316;
+}

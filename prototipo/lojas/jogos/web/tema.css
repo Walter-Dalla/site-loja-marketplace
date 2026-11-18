@@ -1,0 +1,20 @@
+/* Customização da loja de jogos: substitui web/tema.css. */
+:root {
+  color-scheme: dark;
+  --fonte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fundo: #0f1020;
+  --superficie: #1a1b33;
+  --texto: #f1f1f8;
+  --texto-suave: #a5a7c7;
+  --borda: #2f3158;
+  --primaria: #7c3aed;
+  --sobre-primaria: #ffffff;
+  --destaque: #c4b5fd;
+  --alerta: #fca5a5;
+  --raio: 12px;
+}
+
+.faixa {
+  background: linear-gradient(120deg, #4c1d95, #7c3aed 55%, #db2777);
+  color: #fff;
+}

@@ -1,0 +1,81 @@
+{
+  "categorias": [
+    { "id": "c1", "nome": "Impressoras", "atributos": ["Tecnologia", "Volume de impressão", "Marca", "Voltagem"] },
+    { "id": "c2", "nome": "Filamentos e resinas", "atributos": ["Material", "Cor", "Conteúdo"] },
+    { "id": "c3", "nome": "Peças e acessórios", "atributos": ["Tipo", "Compatível com"] }
+  ],
+  "produtos": [
+    {
+      "id": "p1", "nome": "Creality Ender-3 V3 SE", "categoriaId": "c1",
+      "descricao": "Impressora de entrada com nivelamento automático. Acompanha amostra de filamento.",
+      "precoCentavos": 169900, "estoque": 4, "destaque": true,
+      "atributos": { "Tecnologia": "FDM", "Volume de impressão": "220 x 220 x 250 mm", "Marca": "Creality", "Voltagem": "Bivolt" }
+    },
+    {
+      "id": "p2", "nome": "Bambu Lab A1 Mini", "categoriaId": "c1",
+      "descricao": "Compacta e rápida, calibração automática completa.",
+      "precoCentavos": 289900, "precoPromocionalCentavos": 259900, "estoque": 2, "destaque": true,
+      "atributos": { "Tecnologia": "FDM", "Volume de impressão": "180 x 180 x 180 mm", "Marca": "Bambu Lab", "Voltagem": "Bivolt" }
+    },
+    {
+      "id": "p3", "nome": "Bambu Lab X1 Carbon", "categoriaId": "c1",
+      "descricao": "Câmara fechada, alta velocidade, pronta para materiais técnicos. Preço e prazo sob consulta.",
+      "sobConsulta": true, "destaque": true,
+      "atributos": { "Tecnologia": "FDM", "Volume de impressão": "256 x 256 x 256 mm", "Marca": "Bambu Lab", "Voltagem": "Bivolt" }
+    },
+    {
+      "id": "p4", "nome": "Elegoo Mars 5 Ultra", "categoriaId": "c1",
+      "descricao": "Impressora de resina de alta resolução para miniaturas e peças detalhadas.",
+      "precoCentavos": 239900, "estoque": 3,
+      "atributos": { "Tecnologia": "Resina", "Volume de impressão": "153 x 77 x 165 mm", "Marca": "Elegoo", "Voltagem": "Bivolt" }
+    },
+    {
+      "id": "p5", "nome": "Anycubic Kobra 3", "categoriaId": "c1",
+      "descricao": "Impressão multicolorida com troca automática de filamento.",
+      "precoCentavos": 319900, "estoque": 0,
+      "atributos": { "Tecnologia": "FDM", "Volume de impressão": "250 x 250 x 260 mm", "Marca": "Anycubic", "Voltagem": "Bivolt" }
+    },
+    {
+      "id": "p6", "nome": "Impressora de grande formato", "categoriaId": "c1",
+      "descricao": "Máquina para produção, montada sob encomenda. Inclui instalação e treinamento.",
+      "sobConsulta": true,
+      "atributos": { "Tecnologia": "FDM", "Volume de impressão": "600 x 600 x 600 mm", "Marca": "Sob encomenda", "Voltagem": "220 V" }
+    },
+    {
+      "id": "p7", "nome": "Filamento PLA 1 kg preto", "categoriaId": "c2",
+      "descricao": "PLA 1,75 mm, fácil de imprimir.",
+      "precoCentavos": 11990, "estoque": 30, "destaque": true,
+      "atributos": { "Material": "PLA", "Cor": "Preto", "Conteúdo": "1 kg" }
+    },
+    {
+      "id": "p8", "nome": "Filamento PETG 1 kg branco", "categoriaId": "c2",
+      "descricao": "PETG 1,75 mm, mais resistente a calor e impacto que o PLA.",
+      "precoCentavos": 13990, "estoque": 18,
+      "atributos": { "Material": "PETG", "Cor": "Branco", "Conteúdo": "1 kg" }
+    },
+    {
+      "id": "p9", "nome": "Resina padrão 1 L cinza", "categoriaId": "c2",
+      "descricao": "Resina 405 nm para impressoras LCD.",
+      "precoCentavos": 18990, "precoPromocionalCentavos": 15990, "estoque": 9,
+      "atributos": { "Material": "Resina", "Cor": "Cinza", "Conteúdo": "1 L" }
+    },
+    {
+      "id": "p10", "nome": "Bico 0,4 mm (kit com 5)", "categoriaId": "c3",
+      "descricao": "Bicos de latão.",
+      "precoCentavos": 3990, "estoque": 40,
+      "atributos": { "Tipo": "Bico", "Compatível com": "Ender-3" }
+    },
+    {
+      "id": "p11", "nome": "Mesa PEI magnética 235 mm", "categoriaId": "c3",
+      "descricao": "Chapa flexível texturizada com base magnética.",
+      "precoCentavos": 14990, "estoque": 7,
+      "atributos": { "Tipo": "Mesa", "Compatível com": "Ender-3" }
+    },
+    {
+      "id": "p12", "nome": "Kit de manutenção", "categoriaId": "c3",
+      "descricao": "Agulhas de limpeza, chaves, espátula e lubrificante.",
+      "precoCentavos": 8990, "estoque": 15,
+      "atributos": { "Tipo": "Ferramentas", "Compatível com": "Universal" }
+    }
+  ]
+}

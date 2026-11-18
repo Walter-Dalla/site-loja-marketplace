@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin</title>
+  <link rel="stylesheet" href="/base.css">
+  <link rel="stylesheet" href="/tema.css">
+</head>
+<body>
+  <header class="topo">
+    <a class="marca" href="#/produtos">
+      <strong>Admin</strong>
+      <span id="loja-nome"></span>
+    </a>
+    <nav id="nav" class="menu" hidden>
+      <a href="#/produtos" data-rota="produtos">Produtos</a>
+      <a href="#/categorias" data-rota="categorias">Categorias</a>
+      <a href="#/pedidos" data-rota="pedidos">Pedidos</a>
+      <a href="#/loja" data-rota="loja">Loja</a>
+      <button type="button" class="botao secundario pequeno" id="sair">Sair</button>
+    </nav>
+  </header>
+  <main id="app" aria-live="polite"><p class="suave">Carregando…</p></main>
+  <footer class="rodape">
+    <span>Protótipo: os dados ficam em memória e somem ao reiniciar o servidor</span>
+    <a href="/">Ver a loja</a>
+  </footer>
+  <script type="module" src="/admin.js"></script>
+</body>
+</html>

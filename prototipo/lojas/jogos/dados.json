@@ -1,0 +1,81 @@
+{
+  "categorias": [
+    { "id": "c1", "nome": "Jogos", "atributos": ["Plataforma", "Condição", "Mídia", "Gênero"] },
+    { "id": "c2", "nome": "Consoles", "atributos": ["Plataforma", "Condição"] },
+    { "id": "c3", "nome": "Acessórios", "atributos": ["Plataforma", "Tipo"] }
+  ],
+  "produtos": [
+    {
+      "id": "p1", "nome": "EA Sports FC 26", "categoriaId": "c1",
+      "descricao": "Futebol com os principais clubes e ligas. Lacrado.",
+      "precoCentavos": 29990, "precoPromocionalCentavos": 24990, "estoque": 12, "destaque": true,
+      "atributos": { "Plataforma": "PS5", "Condição": "Novo", "Mídia": "Física", "Gênero": "Esporte" }
+    },
+    {
+      "id": "p2", "nome": "The Legend of Zelda: Tears of the Kingdom", "categoriaId": "c1",
+      "descricao": "Aventura em mundo aberto. Lacrado.",
+      "precoCentavos": 34990, "estoque": 5, "destaque": true,
+      "atributos": { "Plataforma": "Switch", "Condição": "Novo", "Mídia": "Física", "Gênero": "Aventura" }
+    },
+    {
+      "id": "p3", "nome": "God of War Ragnarök", "categoriaId": "c1",
+      "descricao": "Usado, disco e capa em ótimo estado. Testado na loja.",
+      "precoCentavos": 14990, "estoque": 2,
+      "atributos": { "Plataforma": "PS5", "Condição": "Usado", "Mídia": "Física", "Gênero": "Ação" }
+    },
+    {
+      "id": "p4", "nome": "Forza Horizon 5", "categoriaId": "c1",
+      "descricao": "Código digital enviado após a confirmação da compra.",
+      "precoCentavos": 19990,
+      "atributos": { "Plataforma": "Xbox Series", "Condição": "Novo", "Mídia": "Digital", "Gênero": "Corrida" }
+    },
+    {
+      "id": "p5", "nome": "Elden Ring", "categoriaId": "c1",
+      "descricao": "Usado, com capa original.",
+      "precoCentavos": 12990, "estoque": 0,
+      "atributos": { "Plataforma": "PS4", "Condição": "Usado", "Mídia": "Física", "Gênero": "RPG" }
+    },
+    {
+      "id": "p6", "nome": "Mario Kart 8 Deluxe", "categoriaId": "c1",
+      "descricao": "Corrida para até 4 jogadores na mesma tela. Lacrado.",
+      "precoCentavos": 29990, "estoque": 8,
+      "atributos": { "Plataforma": "Switch", "Condição": "Novo", "Mídia": "Física", "Gênero": "Corrida" }
+    },
+    {
+      "id": "p7", "nome": "Minecraft", "categoriaId": "c1",
+      "descricao": "Código digital enviado após a confirmação da compra.",
+      "precoCentavos": 9990,
+      "atributos": { "Plataforma": "Xbox Series", "Condição": "Novo", "Mídia": "Digital", "Gênero": "Aventura" }
+    },
+    {
+      "id": "p8", "nome": "Console PlayStation 5 Slim", "categoriaId": "c2",
+      "descricao": "Com leitor de disco, 1 TB, um controle. Garantia de 1 ano.",
+      "precoCentavos": 379900, "estoque": 3, "destaque": true,
+      "atributos": { "Plataforma": "PS5", "Condição": "Novo" }
+    },
+    {
+      "id": "p9", "nome": "Console Nintendo Switch OLED", "categoriaId": "c2",
+      "descricao": "Usado, revisado na loja. Acompanha dock e carregador. Garantia de 3 meses.",
+      "precoCentavos": 189900, "estoque": 1,
+      "atributos": { "Plataforma": "Switch", "Condição": "Usado" }
+    },
+    {
+      "id": "p10", "nome": "Controle DualSense", "categoriaId": "c3",
+      "descricao": "Controle sem fio original, branco.",
+      "precoCentavos": 44990, "estoque": 6,
+      "atributos": { "Plataforma": "PS5", "Tipo": "Controle" }
+    },
+    {
+      "id": "p11", "nome": "Headset gamer sem fio", "categoriaId": "c3",
+      "descricao": "Compatível com PS5, PS4, Switch e PC.",
+      "precoCentavos": 39990, "precoPromocionalCentavos": 32990, "estoque": 4, "destaque": true,
+      "atributos": { "Plataforma": "Multiplataforma", "Tipo": "Headset" }
+    },
+    {
+      "id": "p12", "nome": "Cartão de memória 256 GB", "categoriaId": "c3",
+      "descricao": "microSD para Nintendo Switch.",
+      "precoCentavos": 18990, "estoque": 10,
+      "atributos": { "Plataforma": "Switch", "Tipo": "Armazenamento" }
+    }
+  ]
+}
