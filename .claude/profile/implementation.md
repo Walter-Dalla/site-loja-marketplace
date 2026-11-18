@@ -2,7 +2,7 @@
 
 ## Commands
 build: — [docs/prototipo/README.md]
-suite: `node --test prototipo/teste/api.test.mjs` [pending: P-001]
+suite: `node --test prototipo/teste/api.test.mjs` [docs/prototipo/README.md]
 typecheck: `for f in prototipo/server.mjs prototipo/web/*.js; do node --check $f || exit 1; done` [conferido em 2026-11-18]
 service: `LOJA=jogos PORTA=<port> node prototipo/server.mjs` [docs/prototipo/README.md]
 health: `curl -fsS -o /dev/null http://127.0.0.1:<port>/api/loja` [docs/prototipo/API.md]
@@ -12,8 +12,8 @@ health: `curl -fsS -o /dev/null http://127.0.0.1:<port>/api/loja` [docs/prototip
 
 ## Tests
 Area: `node --test --test-name-pattern "<filter>" prototipo/teste/api.test.mjs` (filtra pelo nome do teste) [node --help]
-Suite: chave `suite` de § Commands. O arquivo de testes nasce com o item P-001; antes dele a chave sai com erro por arquivo ausente [pending: P-001]
-Cada grupo de testes sobe o próprio servidor em porta livre (`PORTA=0`), sem depender de serviço já no ar [pending: P-001]
+Suite: chave `suite` de § Commands [docs/prototipo/README.md]
+Cada grupo de testes sobe o próprio servidor em porta livre (`PORTA=0`), sem depender de serviço já no ar [prototipo/teste/api.test.mjs]
 Aceite de tela, sem teste automatizado: os passos de `docs/prototipo/TELAS.md` § Roteiro de aceite da loja e § Roteiro de aceite do admin [docs/prototipo/TELAS.md]
 
 ## Checks

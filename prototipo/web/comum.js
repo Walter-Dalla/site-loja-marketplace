@@ -20,11 +20,16 @@ export async function api(caminho, { metodo = 'GET', corpo, token } = {}) {
   const cabecalhos = {};
   if (corpo !== undefined) cabecalhos['Content-Type'] = 'application/json';
   if (token) cabecalhos.Authorization = `Bearer ${token}`;
-  const resposta = await fetch(`/api${caminho}`, {
-    method: metodo,
-    headers: cabecalhos,
-    body: corpo === undefined ? undefined : JSON.stringify(corpo),
-  });
+  let resposta;
+  try {
+    resposta = await fetch(`/api${caminho}`, {
+      method: metodo,
+      headers: cabecalhos,
+      body: corpo === undefined ? undefined : JSON.stringify(corpo),
+    });
+  } catch {
+    throw new ErroApi(0, { erro: 'Sem conexão com o servidor.' });
+  }
   const dados = resposta.status === 204 ? null : await resposta.json().catch(() => null);
   if (!resposta.ok) throw new ErroApi(resposta.status, dados);
   return dados;

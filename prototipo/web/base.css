@@ -19,6 +19,7 @@ h2 { font-size: 1.25rem; margin-top: 1.5rem; }
 h3 { font-size: 1rem; }
 p { margin: 0 0 .75rem; }
 .suave { color: var(--texto-suave); }
+[hidden] { display: none !important; }
 
 /* Estrutura */
 .topo {
@@ -187,12 +188,13 @@ legend { padding: 0 .35rem; font-size: .9rem; font-weight: 600; }
 .ficha dd { margin: 0; }
 .compra { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin: 1rem 0; }
 .compra label { width: 6rem; }
+.produto .descricao { white-space: pre-line; }
 
 /* Carrinho */
 .itens { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .75rem; }
 .item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: .5rem 1rem;
   align-items: center;
   padding: .75rem;
@@ -203,6 +205,11 @@ legend { padding: 0 .35rem; font-size: .9rem; font-weight: 600; }
 .item .controles { display: flex; align-items: center; gap: .5rem; }
 .item .controles input { width: 4.5rem; }
 .item .subtotal { font-weight: 700; text-align: right; }
+.item .preco-bloco { display: inline-flex; flex-wrap: wrap; align-items: baseline; }
+.item h3 { margin: 0 0 .25rem; }
+.item h3 a { color: inherit; }
+.item.fora { border-style: dashed; }
+.item.fora h3 { color: var(--texto-suave); }
 .total { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 0; border-top: 1px solid var(--borda); font-size: 1.15rem; font-weight: 700; }
 
 pre.mensagem {
@@ -228,3 +235,4 @@ td.numero, th.numero { text-align: right; white-space: nowrap; }
 .bloco { padding: .9rem; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--superficie); }
 details.bloco > summary { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1rem; cursor: pointer; }
 details.bloco[open] > summary { margin-bottom: .75rem; padding-bottom: .75rem; border-bottom: 1px solid var(--borda); }
+.entrada { max-width: 380px; margin: 2rem auto; }
