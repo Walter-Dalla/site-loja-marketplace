@@ -381,11 +381,12 @@ function responder(res, status, corpo) {
 async function lerCorpo(req) {
   const partes = [];
   let tamanho = 0;
+  // Lê o corpo até o fim antes de recusar: lançar no meio da leitura derruba a conexão antes da resposta.
   for await (const parte of req) {
     tamanho += parte.length;
-    if (tamanho > 100_000) throw new ErroHttp(413, 'Corpo grande demais.');
-    partes.push(parte);
+    if (tamanho <= 100_000) partes.push(parte);
   }
+  if (tamanho > 100_000) throw new ErroHttp(413, 'Corpo grande demais.');
   if (!tamanho) return {};
   let dados;
   try {
@@ -485,7 +486,7 @@ const servidor = createServer(async (req, res) => {
       responder(res, e.status, { erro: e.message, detalhes: e.detalhes });
     } else {
       console.error(e);
-      responder(res, 500, { erro: 'Erro interno.' });
+      responder(res, 500, { erro: 'Erro interno.', detalhes: [] });
     }
   }
 });

@@ -85,3 +85,23 @@ describe('partida', () => {
     assert.equal((await loja.pedir('GET', '/api/loja')).status, 200);
   });
 });
+
+/** Confere o corpo de erro do contrato: { erro: <texto>, detalhes: <lista> }. */
+function assertErro(resposta, status) {
+  assert.equal(resposta.status, status, resposta.texto);
+  assert.equal(typeof resposta.dados?.erro, 'string');
+  assert.ok(Array.isArray(resposta.dados.detalhes));
+}
+
+describe('corpo grande', () => {
+  const loja = usarLoja('jogos');
+
+  it('desvio D1: corpo de 2 MB devolve 413 em todas as tentativas', async () => {
+    const corpo = JSON.stringify({ observacao: 'x'.repeat(2_000_000) });
+    for (let tentativa = 0; tentativa < 5; tentativa++) {
+      const r = await loja.pedir('POST', '/api/pedidos', corpo);
+      assertErro(r, 413);
+      assert.deepEqual(r.dados, { erro: 'Corpo grande demais.', detalhes: [] });
+    }
+  });
+});
