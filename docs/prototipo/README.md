@@ -28,6 +28,12 @@ LOJA=impressao3d PORTA=4102 node prototipo/server.mjs
 
 Loja em `http://localhost:<porta>/`, admin em `http://localhost:<porta>/admin`.
 
+Testes de contrato da API (cada grupo sobe o próprio servidor em porta livre; nada precisa estar no ar):
+
+```sh
+node --test prototipo/teste/api.test.mjs
+```
+
 | Variável | Padrão | Papel |
 |---|---|---|
 | `LOJA` | `jogos` | nome de uma pasta de `prototipo/lojas/` |
