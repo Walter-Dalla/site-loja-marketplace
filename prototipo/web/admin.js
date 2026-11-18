@@ -1,5 +1,5 @@
 // Telas do admin: login e as rotas de docs/prototipo/TELAS.md § Admin, desenhadas em #app.
-import { esc, moeda, api, ErroApi, linhasDoErro, avisoHtml } from './comum.js';
+import { esc, moeda, api, ErroApi, linhasDoErro, avisoHtml, precoHtml } from './comum.js';
 
 const app = document.getElementById('app');
 const nav = document.getElementById('nav');
@@ -161,15 +161,6 @@ function telaLogin() {
 
 // ---------- Produtos ----------
 
-function precoNaLista(p) {
-  if (p.sobConsulta) return 'Sob consulta';
-  if (p.precoCentavos == null) return '—';
-  if (p.precoPromocionalCentavos != null) {
-    return `<s>${esc(moeda(p.precoCentavos))}</s> ${esc(moeda(p.precoPromocionalCentavos))}`;
-  }
-  return esc(moeda(p.precoCentavos));
-}
-
 const simNao = (valor) => (valor ? 'Sim' : 'Não');
 
 async function telaProdutos({ atual, aviso }) {
@@ -180,7 +171,7 @@ async function telaProdutos({ atual, aviso }) {
     <tr data-produto="${esc(p.id)}">
       <td><a href="#/produto/${esc(encodeURIComponent(p.id))}">${esc(p.nome)}</a></td>
       <td>${esc(nomeCategoria.get(p.categoriaId) ?? p.categoriaId)}</td>
-      <td class="numero">${precoNaLista(p)}</td>
+      <td class="numero preco-bloco">${precoHtml(p)}</td>
       <td class="numero">${p.estoque == null ? '—' : esc(p.estoque)}</td>
       <td>${simNao(p.ativo)}</td>
       <td>${simNao(p.destaque)}</td>
