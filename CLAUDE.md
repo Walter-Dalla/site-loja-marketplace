@@ -14,6 +14,8 @@ Fase 2, protótipo. As fases estão em `docs/REQUISITOS.md` § 2. A arquitetura 
 | `docs/prototipo/README.md` | limites, pastas e como rodar o protótipo | for tocar em `prototipo/` |
 | `docs/prototipo/API.md` | contrato da API falsa | for mexer no servidor, nos testes ou numa chamada de tela |
 | `docs/prototipo/TELAS.md` | telas, fluxos e roteiros de aceite | for construir ou conferir uma tela |
+| `docs/GLOSSARIO.md` | nome de negócio de cada termo e o identificador no código | for nomear ou procurar um conceito |
+| `docs/features/README.md` | mapa de features, uma nota por feature | for localizar o que uma tarefa toca |
 | `prototipo/` | código do protótipo, descartável | |
 | `pending/` | itens em aberto (`P-NNN-*.md`), locais ao clone | for escolher ou executar um item |
 
