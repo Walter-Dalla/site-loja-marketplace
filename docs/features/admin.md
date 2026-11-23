@@ -12,6 +12,7 @@ Contrato: `docs/prototipo/API.md` § Rotas de admin. Telas: `docs/prototipo/TELA
 - `validarProduto`, `validarCategoria` — regras do cadastro de produto e de categoria
 - `validarLoja` — regras da configuração da loja
 - `SENHA_ADMIN`, `ADMIN` — login e marca das rotas que exigem autenticação
+- `chamar` (tela do admin) — toda chamada de admin leva o token guardado em `sessionStorage`; um 401 encerra a sessão e volta ao login (servidor reiniciado esquece os tokens)
 
 ## Interações
 

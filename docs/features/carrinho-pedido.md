@@ -12,6 +12,7 @@ Contrato: `docs/prototipo/API.md` § `POST /api/pedidos` e § Mensagem e link. T
 - `criarPedido` — valida cliente e itens, recalcula preço e disponibilidade, salva o pedido
 - `montarMensagem` — texto do pedido enviado ao vendedor
 - `STATUS` — valores do status do pedido
+- `lerCarrinho`, `gravarCarrinho` (tela da loja) — carrinho no `localStorage`, uma chave por loja; leitura saneada (formato inválido vale inteiro como vazio; até 50 itens, quantidade de 1 a 99) e escrita única
 
 ## Interações
 

@@ -24,4 +24,5 @@ Fase 2, protótipo. As fases estão em `docs/REQUISITOS.md` § 2. A arquitetura 
 ```sh
 LOJA=jogos PORTA=4101 node prototipo/server.mjs
 LOJA=impressao3d PORTA=4102 node prototipo/server.mjs
+node --test prototipo/teste/api.test.mjs   # testes de contrato da API
 ```
